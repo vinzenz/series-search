@@ -55,7 +55,7 @@ def get_magnet_links(name, exact):
         if attrs.get('class', '') != 'magnet':
             continue
         title = attrs.get('title', '')
-        if title.find('HDTV') == -1 or title.find('720') != -1:
+        if (title.find('HDTV') == -1 and title.find('WEB') == -1) or title.find('720') != -1:
             continue
         season, episode = ' '.join(pattern.findall(title)[0]).strip().split()
         season = ('0' + season.lstrip('0'))[-2:]

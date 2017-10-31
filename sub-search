@@ -1,0 +1,37 @@
+#!/usr/bin/env python2
+import sys
+from pythonopensubtitles.opensubtitles import OpenSubtitles
+from pythonopensubtitles.utils import File
+import requests
+import os
+import gzip
+import StringIO
+import json
+
+settings = {}
+with open('.settings', 'r') as f:
+    settings = json.load(f)
+
+titles = OpenSubtitles()
+token = titles.login(settings['opensubtitles']['user'], settings['opensubtitles']['pass'])
+
+for movie in sys.argv[1:]:
+    if movie.endswith(".srt"):
+        continue
+    f = File(movie)
+    results = titles.search_subtitles([{'sublanguageid': 'eng', 'moviehash': f.get_hash(), 'moviebytesize': f.size, 'SubFormat': 'srt'}])
+    if results:
+        sub_path, _ = os.path.splitext(movie)
+        sub_path += '.srt'
+        print "Downloading", os.path.basename(sub_path)
+        url = results[0]['SubDownloadLink']
+        r = requests.get(url, stream=True)
+        r.raise_for_status()
+        compressedFile = StringIO.StringIO()
+        compressedFile.write(r.raw.read())
+        compressedFile.seek(0)
+        with open(sub_path, 'wb') as f:
+            gf = gzip.GzipFile(fileobj=compressedFile, mode='rb')
+            f.write(gf.read())
+    else:
+        print "Couldn't find results for", movie

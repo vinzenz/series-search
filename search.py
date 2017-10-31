@@ -36,7 +36,7 @@ def show_data():
 
 def get_magnet_links(name, exact):
     show_id = -1
-    for show in show_data:
+    for show in show_data():
         if exact and show['text'].lower() == name.lower():
             show_id = show['id']
             break

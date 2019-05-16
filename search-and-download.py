@@ -1,10 +1,12 @@
 #!/usr/bin/env python2
 
-from subprocess import call
+#from subprocess import call
 
 from search import get_magnet_links
 import sys
-import os.path
+#import os.path
+import requests
+import json
 
 name, from_season, from_episode = sys.argv[1:4]
 
@@ -15,7 +17,13 @@ episodes = sorted(result[seasons[0]].keys())[sorted(result[seasons[0]].keys()).i
 for idx, season in enumerate(seasons):
     for episode in episodes:
         try:
-            call([os.path.expanduser("~/Applications/Deluge.app/Contents/MacOS/Deluge"), "add", result[season][episode][0]])
+            session = requests.post("http://localhost:9091/transmission/rpc", data=json.dumps({"method":
+                "session-get"}))
+            session_id = session.headers['X-Transmission-Session-Id']
+            response = requests.post("http://localhost:9091/transmission/rpc",
+                                     data=json.dumps({"method":"torrent-add","arguments":{"paused":False,"download-dir":"/Users/vfeenstr/Downloads","filename":result[season][episode][0]}}),
+                                     headers={'X-Transmission-Session-Id': session_id})
+#            call([os.path.expanduser("~/Applications/Deluge.app/Contents/MacOS/Deluge"), "add", result[season][episode][0]])
         except:
             print "Failed to add S{}E{}".format(season, episode)
     if idx + 1 < len(seasons):

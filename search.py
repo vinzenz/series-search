@@ -13,7 +13,7 @@ pattern = re.compile(r'S(\d\d)E(\d\d)|(\d+)x(\d+)')
 def shows_url():
     return ''.join(['h', 't', 't', 'p', 's', ':', '/', '/', 'e', 'z', 't', 'v',
                     '.', 'a', 'g', '/', 'j', 's', '/', 's', 'e', 'a', 'r', 'c',
-                    'h', '_', 's', 'h', 'o', 'w', 's', '1', '.', 'j', 's'])
+                    'h', '_', 's', 'h', 'o', 'w', 's', '2', '.', 'j', 's'])
 
 
 def search_url():
@@ -34,7 +34,7 @@ def show_data():
     return _show_data
 
 
-def get_magnet_links(name, exact):
+def get_magnet_links(name, exact, filter_quality=True):
     show_id = -1
     for show in show_data():
         if exact and show['text'].lower() == name.lower():
@@ -56,7 +56,8 @@ def get_magnet_links(name, exact):
             continue
         title = attrs.get('title', '')
         if (title.find('HDTV') == -1 and title.find('WEB') == -1) or title.find('720') != -1:
-            continue
+            if filter_quality:
+                continue
         season, episode = ' '.join(pattern.findall(title)[0]).strip().split()
         season = ('0' + season.lstrip('0'))[-2:]
         episode = ('0' + episode.lstrip('0'))[-2:]
@@ -71,5 +72,5 @@ if __name__ == '__main__':
     import sys
 
     links = get_magnet_links(sys.argv[1], len(sys.argv) > 2 and
-                             sys.argv[2] == 'exact')
+                             sys.argv[2] == 'exact', filter_quality=('all' in sys.argv))
     pprint(links)

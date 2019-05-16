@@ -1,30 +1,51 @@
-#!/usr/bin/env python2
-import sys
+#!/usr/bin/env python
 from pythonopensubtitles.opensubtitles import OpenSubtitles
 from pythonopensubtitles.utils import File
-import requests
-import os
-import gzip
 import StringIO
+import functools
+import gzip
 import json
+import os
+import requests
+import sys
+
+
+def compare(left, right):
+    return int(left.setdefault('SubDownloadsCnt', '0')) \
+           - int(right.setdefault('SubDownloadsCnt', '0'))
+    result = int(float(left.setdefault('SubRating', '0'))) \
+             - (float(right.setdefault('SubRating', '0')))
+
 
 settings = {}
-with open('.settings', 'r') as f:
-    settings = json.load(f)
+try:
+    with open('.settings', 'r') as f:
+        settings = json.load(f)
+except IOError:
+    with open(os.path.join(os.path.dirname(__file__), '.settings'), 'r') as f:
+        settings = json.load(f)
 
 titles = OpenSubtitles()
 token = titles.login(settings['opensubtitles']['user'], settings['opensubtitles']['pass'])
+
+if not token:
+    print "Failed to authenticate"
+    sys.exit(-1)
 
 for movie in sys.argv[1:]:
     if movie.endswith(".srt"):
         continue
     f = File(movie)
-    results = titles.search_subtitles([{'sublanguageid': 'eng', 'moviehash': f.get_hash(), 'moviebytesize': f.size, 'SubFormat': 'srt'}])
+    results = titles.search_subtitles(
+        [{'sublanguageid': 'eng', 'moviehash': f.get_hash(), 'moviebytesize': f.size, 'SubFormat': 'srt'}])
     if results:
+        results = sorted(results, key=functools.cmp_to_key(compare), reverse=True)
         sub_path, _ = os.path.splitext(movie)
         sub_path += '.srt'
+        if os.path.exists(sub_path):
+            os.rename(sub_path, sub_path + '.old')
         print "Downloading", os.path.basename(sub_path)
-        url = results[0]['SubDownloadLink']
+        url = results[-1]['SubDownloadLink']
         r = requests.get(url, stream=True)
         r.raise_for_status()
         compressedFile = StringIO.StringIO()
